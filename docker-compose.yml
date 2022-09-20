@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  transport:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+    command: >
+      sh -c "cd transport &&
+             python3 manage.py migrate &&
+             python3 manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - db
+    
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+  redis:
+    image: redis
+  celery:
+    restart: always
+    build:
+      context: .
+    command: >
+      sh -c "cd transport &&
+            celery -A transport worker -l info"
+    volumes:
+      - .:/code
+volumes:
+  postgres_data:
+
